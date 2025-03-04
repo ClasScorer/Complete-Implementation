@@ -1,0 +1,15 @@
+[submodule "Attention"]
+	path = Attention
+	url = git@github.com:ClasScorer/Attention.git
+[submodule "Hand-Raising"]
+	path = Hand-Raising
+	url = git@github.com:ClasScorer/Hand-Raising.git
+[submodule "Recognition"]
+	path = Recognition
+	url = git@github.com:ClasScorer/Recognition.git
+[submodule "Localization"]
+	path = Localization
+	url = git@github.com:ClasScorer/localization.git
+[submodule "Frontend"]
+	path = Frontend
+	url = git@github.com:ClasScorer/localization.git
