@@ -11,3 +11,6 @@
 	path = Localization
 	url = git@github.com:ClasScorer/localization.git
 
+[submodule "frontend"]
+	path = frontend
+	url = git@github.com:ClasScorer/Frontend.git
