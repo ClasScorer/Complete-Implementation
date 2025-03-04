@@ -10,6 +10,4 @@
 [submodule "Localization"]
 	path = Localization
 	url = git@github.com:ClasScorer/localization.git
-[submodule "Frontend"]
-	path = Frontend
-	url = git@github.com:ClasScorer/localization.git
+
