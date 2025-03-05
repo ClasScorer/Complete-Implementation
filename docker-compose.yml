@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  # API Gateway
+  gateway:
+    build:
+      context: ./Gateway
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      - PORT=3000
+      - RECOGNITION_URL=http://recognition:23121
+      - ATTENTION_URL=http://attention:23123
+      - HANDRAISING_URL=http://handraising:23124
+      - LOCALIZATION_URL=http://localization:23122
+    networks:
+      - classroom-analysis
+    depends_on:
+      - recognition
+      - attention
+      - handraising
+      - localization
+
+  # Recognition Service
+  recognition:
+    build: 
+      context: ./Recognition
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - "23121"
+    networks:
+      - classroom-analysis
+    environment:
+      - TF_CPP_MIN_LOG_LEVEL=2  # Suppress TensorFlow warnings
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:23121/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Attention Service
+  attention:
+    build:
+      context: ./Attention
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - "23123"
+    networks:
+      - classroom-analysis
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:23123/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Hand-Raising Service
+  handraising:
+    build:
+      context: ./Hand-Raising
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - "23124"
+    networks:
+      - classroom-analysis
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:23124/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Localization Service
+  localization:
+    build:
+      context: ./Localization
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - "23122"
+    networks:
+      - classroom-analysis
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:23122/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  classroom-analysis:
+    driver: bridge
+
+volumes:
+  recognition-data:
+    driver: local
