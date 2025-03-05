@@ -14,3 +14,6 @@
 [submodule "frontend"]
 	path = frontend
 	url = git@github.com:ClasScorer/Frontend.git
+[submodule "Gateway"]
+	path = Gateway
+	url = git@github.com:ClasScorer/Gateway.git
