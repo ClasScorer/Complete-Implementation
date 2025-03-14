@@ -17,3 +17,6 @@
 [submodule "Gateway"]
 	path = Gateway
 	url = git@github.com:ClasScorer/Gateway.git
+[submodule "Avatar-Creation"]
+	path = Avatar-Creation
+	url = git@github.com:ClasScorer/Avatar_Creation.git
