@@ -16,3 +16,6 @@
 [submodule "Avatar-Creation"]
 	path = Avatar-Creation
 	url = git@github.com:ClasScorer/Avatar_Creation.git
+[submodule "classcorer-webapp"]
+	path = classcorer-webapp
+	url = git@github.com:ClasScorer/classcorer-webapp.git

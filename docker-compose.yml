@@ -9,10 +9,11 @@ services:
       - "80:80"
     environment:
       - PORT=3000
+      - HOST=0.0.0.0
       - RECOGNITION_URL=http://recognition:23121
       - ATTENTION_URL=http://attention:23123
-      - HANDRAISING_URL=http://handraising:23124
-      - LOCALIZATION_URL=http://localization:23122
+      - HANDRAISING_URL=http://handraising:23122
+      - LOCALIZATION_URL=http://localization:23120
     networks:
       - classroom-analysis
     depends_on:
@@ -20,6 +21,12 @@ services:
       - attention
       - handraising
       - localization
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Recognition Service
   recognition:
@@ -34,12 +41,34 @@ services:
     environment:
       - TF_CPP_MIN_LOG_LEVEL=2  # Suppress TensorFlow warnings
       - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql://user:password@recognition-db:5432/face_embeddings
+    depends_on:
+      - recognition-db
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:23121/"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # Recognition Database
+  recognition-db:
+    image: postgres:13
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=face_embeddings
+    volumes:
+      - recognition-data:/var/lib/postgresql/data
+    networks:
+      - classroom-analysis
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d face_embeddings"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # Attention Service
   attention:
@@ -53,6 +82,9 @@ services:
       - classroom-analysis
     environment:
       - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql://user:password@attention-db:5432/student_attention
+    depends_on:
+      - attention-db
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:23123/"]
       interval: 30s
@@ -60,29 +92,29 @@ services:
       retries: 3
       start_period: 40s
 
+  # Attention Database
+  attention-db:
+    image: postgres:13
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=student_attention
+    volumes:
+      - attention-data:/var/lib/postgresql/data
+    networks:
+      - classroom-analysis
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d student_attention"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   # Hand-Raising Service
   handraising:
     build:
       context: ./Hand-Raising
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    expose:
-      - "23124"
-    networks:
-      - classroom-analysis
-    environment:
-      - PYTHONUNBUFFERED=1
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:23124/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # Localization Service
-  localization:
-    build:
-      context: ./Localization
       dockerfile: Dockerfile
     restart: unless-stopped
     expose:
@@ -98,10 +130,75 @@ services:
       retries: 3
       start_period: 40s
 
+  # Localization Service
+  localization:
+    build:
+      context: ./Localization
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - "23120"
+    networks:
+      - classroom-analysis
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:23120/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Classcorer WebApp
+  webapp:
+    build:
+      context: ./classcorer-webapp
+      dockerfile: dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    networks:
+      - classroom-analysis
+    environment:
+      - DATABASE_URL=postgresql://user:password@webapp-db:5432/classcorer
+      - NEXTAUTH_SECRET=your-secret-key-here
+      - NEXTAUTH_URL=http://localhost:3000
+    depends_on:
+      - webapp-db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # WebApp Database
+  webapp-db:
+    image: postgres:13
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=classcorer
+    volumes:
+      - webapp-data:/var/lib/postgresql/data
+    networks:
+      - classroom-analysis
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d classcorer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
 networks:
   classroom-analysis:
     driver: bridge
 
 volumes:
   recognition-data:
+    driver: local
+  attention-data:
+    driver: local
+  webapp-data:
     driver: local
