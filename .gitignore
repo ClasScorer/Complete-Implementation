@@ -1,1 +1,11 @@
 ports
+Test-Gateway/*.jpg
+Test-Gateway/*.jpeg
+Test-HandRaising/*.jpg
+Test-HandRaising/*.jpeg
+Test-Attention/*.jpg
+Test-Attention/*.jpeg
+Test-Recognition/*.jpg
+Test-Recognition/*.jpeg
+Test-Localization/*.jpg
+Test-Localization/*.jpeg
