@@ -5,7 +5,7 @@ import os
 
 # === Configuration ===
 api_url = "http://localhost:23121/identify"  # Direct URL to recognition service
-image_path = "human_4.jpg"  # Replace with your face image file path
+image_path = "human_1.jpg"  # Replace with your face image file path
 
 # === Send POST Request ===
 with open(image_path, "rb") as image_file:
