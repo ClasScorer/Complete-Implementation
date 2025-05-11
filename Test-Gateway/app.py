@@ -36,6 +36,8 @@ def process_image(image_data, is_file=True):
         # Send POST request
         response = requests.post(api_url, files=files, data=data)
         
+
+        
         if response.status_code == 200:
             result = response.json()
             
