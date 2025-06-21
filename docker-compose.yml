@@ -1,12 +1,15 @@
+version: '3.8'
+
 services:
   # API Gateway
   gateway:
     build:
       context: ./Gateway
       dockerfile: Dockerfile
+    container_name: classroom-gateway
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "80:3000"
     environment:
       - PORT=3000
       - HOST=0.0.0.0
@@ -22,17 +25,28 @@ services:
       - handraising
       - localization
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # Recognition Service
   recognition:
     build: 
       context: ./Recognition
       dockerfile: Dockerfile
+    container_name: classroom-recognition
     restart: unless-stopped
     expose:
       - "23121"
@@ -41,7 +55,9 @@ services:
     environment:
       - TF_CPP_MIN_LOG_LEVEL=2  # Suppress TensorFlow warnings
       - PYTHONUNBUFFERED=1
-      - DATABASE_URL=postgresql://user:password@recognition-db:5432/face_embeddings
+      - DATABASE_URL=postgresql://${RECOGNITION_DB_USER:-user}:${RECOGNITION_DB_PASSWORD:-password}@recognition-db:5432/face_embeddings
+    volumes:
+      - recognition-temp:/app/temp
     depends_on:
       - recognition-db
     healthcheck:
@@ -50,31 +66,53 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # Recognition Database
   recognition-db:
     image: postgres:13
+    container_name: classroom-recognition-db
     restart: unless-stopped
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=${RECOGNITION_DB_USER:-user}
+      - POSTGRES_PASSWORD=${RECOGNITION_DB_PASSWORD:-password}
       - POSTGRES_DB=face_embeddings
     volumes:
       - recognition-data:/var/lib/postgresql/data
     networks:
       - classroom-analysis
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d face_embeddings"]
+      test: ["CMD-SHELL", "pg_isready -U ${RECOGNITION_DB_USER:-user} -d face_embeddings"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # Attention Service
   attention:
     build:
       context: ./Attention
       dockerfile: Dockerfile
+    container_name: classroom-attention
     restart: unless-stopped
     expose:
       - "23123"
@@ -82,7 +120,9 @@ services:
       - classroom-analysis
     environment:
       - PYTHONUNBUFFERED=1
-      - DATABASE_URL=postgresql://user:password@attention-db:5432/student_attention
+      - DATABASE_URL=postgresql://${ATTENTION_DB_USER:-user}:${ATTENTION_DB_PASSWORD:-password}@attention-db:5432/student_attention
+    volumes:
+      - attention-temp:/app/temp
     depends_on:
       - attention-db
     healthcheck:
@@ -91,31 +131,53 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # Attention Database
   attention-db:
     image: postgres:13
+    container_name: classroom-attention-db
     restart: unless-stopped
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=${ATTENTION_DB_USER:-user}
+      - POSTGRES_PASSWORD=${ATTENTION_DB_PASSWORD:-password}
       - POSTGRES_DB=student_attention
     volumes:
       - attention-data:/var/lib/postgresql/data
     networks:
       - classroom-analysis
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d student_attention"]
+      test: ["CMD-SHELL", "pg_isready -U ${ATTENTION_DB_USER:-user} -d student_attention"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # Hand-Raising Service
   handraising:
     build:
       context: ./Hand-Raising
       dockerfile: Dockerfile
+    container_name: classroom-handraising
     restart: unless-stopped
     expose:
       - "23122"
@@ -123,18 +185,31 @@ services:
       - classroom-analysis
     environment:
       - PYTHONUNBUFFERED=1
+    volumes:
+      - handraising-temp:/app/temp
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:23122/"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # Localization Service
   localization:
     build:
       context: ./Localization
       dockerfile: Dockerfile
+    container_name: classroom-localization
     restart: unless-stopped
     expose:
       - "23120"
@@ -142,54 +217,102 @@ services:
       - classroom-analysis
     environment:
       - PYTHONUNBUFFERED=1
+    volumes:
+      - localization-temp:/app/temp
+      - localization-output:/app/Cropped Images
+      - localization-zip:/app/zip_output
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:23120/"]
+      test: ["CMD", "curl", "-f", "http://localhost:23120/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # Classcorer WebApp
   webapp:
     build:
       context: ./classcorer-webapp
-      dockerfile: dockerfile
+      dockerfile: Dockerfile
+    container_name: classroom-webapp
     restart: unless-stopped
     ports:
       - "3000:3000"
     networks:
       - classroom-analysis
     environment:
-      - DATABASE_URL=postgresql://user:password@webapp-db:5432/classcorer
-      - NEXTAUTH_SECRET=your-secret-key-here
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${WEBAPP_DB_USER:-user}:${WEBAPP_DB_PASSWORD:-password}@webapp-db:5432/classcorer
       - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-supersecret}
+      - GATEWAY_URL=http://gateway:80
+    volumes:
+      - webapp-data:/app/uploads
     depends_on:
       - webapp-db
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      - gateway
+    # Use a custom entrypoint script to handle database initialization and seeding
+    command: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        sleep 10 &&
+        echo 'Running database migrations...' &&
+        npx prisma migrate deploy &&
+        echo 'Migrations applied successfully!' &&
+        echo 'Attempting to seed the database...' &&
+        (npx prisma db seed || echo 'Warning: Seeding failed but continuing with startup') &&
+        echo 'Starting the application...' &&
+        npm start
+      "
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # WebApp Database
   webapp-db:
     image: postgres:13
+    container_name: classroom-webapp-db
     restart: unless-stopped
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=${WEBAPP_DB_USER:-user}
+      - POSTGRES_PASSWORD=${WEBAPP_DB_PASSWORD:-password}
       - POSTGRES_DB=classcorer
     volumes:
-      - webapp-data:/var/lib/postgresql/data
+      - webapp-db-data:/var/lib/postgresql/data
     networks:
       - classroom-analysis
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d classcorer"]
+      test: ["CMD-SHELL", "pg_isready -U ${WEBAPP_DB_USER:-user} -d classcorer"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   classroom-analysis:
@@ -202,3 +325,10 @@ volumes:
     driver: local
   webapp-data:
     driver: local
+  recognition-temp:
+  attention-temp:
+  handraising-temp:
+  localization-temp:
+  localization-output:
+  localization-zip:
+  webapp-db-data:

@@ -1,6 +1,7 @@
 ports
 Test-Gateway/*.jpg
 Test-Gateway/*.jpeg
+Test-Gateway/*.mp4
 Test-HandRaising/*.jpg
 Test-HandRaising/*.jpeg
 Test-Attention/*.jpg
