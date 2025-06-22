@@ -19,3 +19,6 @@
 [submodule "classcorer-webapp"]
 	path = classcorer-webapp
 	url = git@github.com:ClasScorer/classcorer-webapp.git
+[submodule "canvas-sim"]
+	path = canvas-sim
+	url = git@github.com:ClasScorer/canvas-sim.git

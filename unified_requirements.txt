@@ -1,0 +1,41 @@
+# Unified requirements for all Python microservices (Python 3.12 compatible)
+
+# Core ML and computer vision
+torch>=2.5.0
+torchvision>=0.21.0
+
+# Computer vision and image processing
+opencv-python>=4.8.0
+opencv-python-headless>=4.8.0
+mediapipe
+Pillow>=10.0.0,<11.0.0
+
+# Machine learning utilities
+timm>=0.9.0,<1.0.0
+numpy>=1.24.0,<2.0.0
+transformers==4.37.2
+tf-keras
+scikit-learn
+
+# Face recognition
+deepface>=0.0.75,<0.1.0
+
+# API and web frameworks (resolving conflicts)
+fastapi>=0.115.11
+uvicorn>=0.23.2
+starlette>=0.40.0,<0.47.0
+slowapi>=0.1.4,<0.2.0
+python-multipart>=0.0.9
+python-dotenv>=1.0.0
+
+# Data validation and settings
+pydantic>=2.10.6
+pydantic-settings>=2.8.1
+
+# Database
+prisma>=0.11.0
+
+# Utilities
+httpx>=0.24.1
+matplotlib
+requests 
